@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: prewave-task
+
+  datasource:
+    url: ${DB_URL:}
