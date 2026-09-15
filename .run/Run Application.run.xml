@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="RunPrewaveTask" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+  <configuration default="false" name="Run Application" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
     <module name="prewave-task.main" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="com.prewave.prewavetask.PrewaveTaskApplication" />
     <extension name="net.ashald.envfile">
