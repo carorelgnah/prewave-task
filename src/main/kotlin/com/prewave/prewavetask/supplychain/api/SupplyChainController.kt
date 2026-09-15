@@ -1,0 +1,38 @@
+package com.prewave.prewavetask.supplychain.api
+
+import com.prewave.prewavetask.supplychain.service.SupplyChainService
+import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.*
+import java.util.*
+
+@RestController
+@RequestMapping("/supply-chain")
+class SupplyChainController(
+    private val supplyChainService: SupplyChainService
+) {
+
+    @PostMapping("/edge")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createEdge(@RequestBody edgeCreateRequest: EdgeCreateRequest): EdgeCreatedResponse {
+        val createEdge = supplyChainService.createEdge(
+            source = edgeCreateRequest.source,
+            target = edgeCreateRequest.target
+        )
+        return EdgeCreatedResponse(id = createEdge.id)
+    }
+
+    @DeleteMapping("/edge/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun delete(@PathVariable id: UUID) =
+        supplyChainService.deleteEdge(id = id)
+
+    @GetMapping("/{id}")
+    fun getSupplyChainTree(@PathVariable id: UUID): SupplyChainResponse {
+        supplyChainService.getSupplyChainTree(rootId = id)
+        return SupplyChainResponse(id = id)
+    }
+
+    data class EdgeCreateRequest(val source: UUID, val target: UUID)
+    data class EdgeCreatedResponse(val id: UUID)
+    data class SupplyChainResponse(val id: UUID, val children: List<SupplyChainResponse> = emptyList())
+}
