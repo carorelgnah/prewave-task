@@ -20,8 +20,12 @@ repositories {
 }
 
 dependencies {
+    implementation(libs.spring.boot.starter.webmvc)
+    implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.jooq)
     implementation(libs.kotlin.reflect)
+    implementation(libs.springdoc.openapi.starter.webmvc.ui)
+    implementation(libs.jackson.module.kotlin)
 
     runtimeOnly(libs.postgresql)
 

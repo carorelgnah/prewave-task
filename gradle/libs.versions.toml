@@ -4,15 +4,18 @@ spring-boot = "4.1.1"
 spring-dependency-management = "1.1.7"
 
 [libraries]
-# versions omitted: managed by the Spring Boot BOM
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-jooq = { module = "org.springframework.boot:spring-boot-starter-jooq" }
 spring-boot-starter-jooq-test = { module = "org.springframework.boot:spring-boot-starter-jooq-test" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 postgresql = { module = "org.postgresql:postgresql" }
+spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version = "3.1.1" }
+jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin", version = "3.1.2" }
+
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
-spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
-
 testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
 
