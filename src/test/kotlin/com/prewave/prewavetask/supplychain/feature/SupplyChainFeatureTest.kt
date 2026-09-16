@@ -11,12 +11,13 @@ import com.prewave.prewavetask.supplychain.api.SupplyChainController.EdgeCreated
 import com.prewave.prewavetask.supplychain.repository.EdgeRepository
 import org.flywaydb.core.Flyway
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.MediaType
+import org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import org.testcontainers.junit.jupiter.Container
@@ -40,56 +41,81 @@ class SupplyChainFeatureTest(
         flyway.clean()
         flyway.migrate()
     }
-    @Test
-    fun `should create new edge`() {
-        val response: EdgeCreatedResponse =
+
+    @Nested
+    inner class CreateEdge {
+        @Test
+        fun `should create new edge`() {
+            val response: EdgeCreatedResponse =
+                mockMvc.createEdge(EdgeCreateRequest(source = SOURCE_ID, target = TARGET_ID))
+                    .andExpect { status { isCreated() } }
+                    .andReturn().response.contentAsString.let { objectMapper.readValue<EdgeCreatedResponse>(it) }
+
+            assertThat(response).prop(EdgeCreatedResponse::id).isNotNull()
+
+            val savedEdge = edgeRepository.getEdgeById(response.id)
+            assertThat(savedEdge).isNotNull().all {
+                prop(EdgeRecord::sourceId).isEqualTo(SOURCE_ID)
+                prop(EdgeRecord::targetId).isEqualTo(TARGET_ID)
+            }
+        }
+
+        @Test
+        fun `should respond with error if edge already exists`() {
+            edgeRepository.createEdge(source = SOURCE_ID, target = TARGET_ID)
+
             mockMvc.createEdge(EdgeCreateRequest(source = SOURCE_ID, target = TARGET_ID))
-                .andExpect { status { isCreated() } }
-                .andReturn().response.contentAsString.let { objectMapper.readValue<EdgeCreatedResponse>(it) }
+                .andExpect {
+                    status { isConflict() }
+                    content { contentType(MediaType.APPLICATION_PROBLEM_JSON) }
+                    jsonPath("$.title").value("Edge already exists")
+                    jsonPath("$.detail").value("Edge with source $SOURCE_ID and target $TARGET_ID already exists")
+                }
+        }
 
-        assertThat(response).prop(EdgeCreatedResponse::id).isNotNull()
+        @Test
+        fun `should respond with error if request is infalid`() {
+            mockMvc.createEdge(EdgeCreateRequest(source = SOURCE_ID, target = SOURCE_ID))
+                .andExpect {
+                    status { isBadRequest() }
+                    content { contentType(MediaType.APPLICATION_PROBLEM_JSON) }
+                    jsonPath("$.title").value("Invalid request")
+                    jsonPath("$.detail").value("Source and target cannot be the same")
+                }
+        }
 
-        val savedEdge = edgeRepository.getEdgeById(response.id)
-        assertThat(savedEdge).isNotNull().all{
-            prop(EdgeRecord::sourceId).isEqualTo(SOURCE_ID)
-            prop(EdgeRecord::targetId).isEqualTo(TARGET_ID)
+        private fun MockMvc.createEdge(createEdgeRequest: EdgeCreateRequest) =
+            post("/supply-chain/edge") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(createEdgeRequest)
+            }
+    }
+
+    @Nested
+    inner class DeleteEdge {
+        @Test
+        fun `should delete existing edge`() {
+            TODO("Not yet implemented")
+        }
+
+        @Test
+        fun `should respond with error if deleting non existent edge`() {
+            TODO("Not yet implemented")
         }
     }
 
-    @Test
-    fun `should respond with error if edge already exists`() {
-        edgeRepository.createEdge(source = SOURCE_ID, target = TARGET_ID)
-
-        mockMvc.createEdge(EdgeCreateRequest(source = SOURCE_ID, target = TARGET_ID))
-            .andExpect { status { isConflict() } }
-    }
-
-    @Test
-    fun `should delete existing edge`() {
-        TODO("Not yet implemented")
-    }
-
-
-    @Test
-    fun `should respond with error if deleting non existent edge`() {
-        TODO("Not yet implemented")
-    }
-
-    @Test
-    fun `should return supply chain tree from root node`() {
-        TODO("Not yet implemented")
-    }
-
-    @Test
-    fun `should return error when root node was not found to fetch supply chain tree`() {
-        TODO("Not yet implemented")
-    }
-
-    private fun MockMvc.createEdge(createEdgeRequest: EdgeCreateRequest) =
-        post("/supply-chain/edge") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(createEdgeRequest)
+    @Nested
+    inner class GetSupplyChainTree {
+        @Test
+        fun `should return supply chain tree from root node`() {
+            TODO("Not yet implemented")
         }
+
+        @Test
+        fun `should return error when root node was not found to fetch supply chain tree`() {
+            TODO("Not yet implemented")
+        }
+    }
 
     companion object {
 

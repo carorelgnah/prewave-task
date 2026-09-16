@@ -6,3 +6,7 @@ spring:
     url: jdbc:postgresql://localhost:${DB_PORT}/${DB_NAME}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+
+  mvc:
+    problem details:
+      enabled: true
