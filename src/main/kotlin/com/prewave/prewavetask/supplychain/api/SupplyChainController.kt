@@ -69,16 +69,45 @@ class SupplyChainController(
         }
     }
 
+    @GetMapping("/{sourceId}")
+    fun getSupplyChainTree(@PathVariable sourceId: String): SupplyChainResponse =
+        runCatching {
+            supplyChainService.getSupplyChainTree(rootSourceId = sourceId)
+                .toResponse()
+        }.getOrElse { exception ->
+            when (exception) {
+                is NoSuchElementException -> throw ProblemDetailException(
+                    status = HttpStatus.NOT_FOUND,
+                    title = "Supply chain tree not found",
+                    detail = "Supply chain tree for source $sourceId not found",
+                    cause = exception
+                )
 
-    @GetMapping("/{id}")
-    fun getSupplyChainTree(@PathVariable id: UUID): SupplyChainResponse {
-        supplyChainService.getSupplyChainTree(rootId = id)
-        return SupplyChainResponse(id = id)
+                else -> throw ProblemDetailException(
+                    status = HttpStatus.INTERNAL_SERVER_ERROR,
+                    title = "Unknown error",
+                    detail = "Supply chain tree fetching failed",
+                    cause = exception
+                )
+            }
+        }
+
+    private fun Map<String, List<String>>.toResponse(): SupplyChainResponse {
+        val root = determineRootKey()
+
+        return SupplyChainResponse(sourceId = root, children = this[root]?.toResponse(map = this))
     }
+
+    private fun List<String>.toResponse(map: Map<String, List<String>>): List<SupplyChainResponse> =
+        map { targetId -> SupplyChainResponse(sourceId = targetId, children = map[targetId]?.toResponse(map)) }
+
+    private fun Map<String, List<String>>.determineRootKey(): String =
+        keys.firstOrNull { key -> !this.values.flatten().contains(key) }
+            ?: throw IllegalStateException("Supply chain tree is not valid")
 
     data class EdgeRequest(val source: String, val target: String)
     data class EdgeCreatedResponse(val id: UUID)
-    data class SupplyChainResponse(val id: UUID, val children: List<SupplyChainResponse> = emptyList())
+    data class SupplyChainResponse(val sourceId: String?, val children: List<SupplyChainResponse>?)
 
 
 }

@@ -4,7 +4,6 @@ import com.prewave.prewavetask.jooq.tables.records.EdgeRecord
 import com.prewave.prewavetask.supplychain.repository.EdgeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.*
 
 @Service
 @Transactional
@@ -25,7 +24,11 @@ class SupplyChainService(private val edgeRepository: EdgeRepository) {
     }
 
     @Transactional(readOnly = true)
-    fun getSupplyChainTree(rootId: UUID) {
-        //TODO: implement
+    fun getSupplyChainTree(rootSourceId: String): Map<String, List<String>> {
+        val edgeRecords = edgeRepository.getSupplyChainEdgesBySource(rootSourceId)
+
+        return edgeRecords.groupBy(keySelector = { it.sourceId }, valueTransform = { it.targetId })
+            .takeIf { it.isNotEmpty() }
+            ?: throw NoSuchElementException("Supply chain tree not found")
     }
 }

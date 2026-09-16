@@ -2,12 +2,9 @@ package com.prewave.prewavetask.supplychain.feature
 
 import assertk.all
 import assertk.assertThat
-import assertk.assertions.isEqualTo
-import assertk.assertions.isNotNull
-import assertk.assertions.prop
+import assertk.assertions.*
 import com.prewave.prewavetask.jooq.tables.records.EdgeRecord
-import com.prewave.prewavetask.supplychain.api.SupplyChainController.EdgeRequest
-import com.prewave.prewavetask.supplychain.api.SupplyChainController.EdgeCreatedResponse
+import com.prewave.prewavetask.supplychain.api.SupplyChainController.*
 import com.prewave.prewavetask.supplychain.repository.EdgeRepository
 import org.flywaydb.core.Flyway
 import org.junit.jupiter.api.BeforeEach
@@ -20,14 +17,13 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.delete
+import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.postgresql.PostgreSQLContainer
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.module.kotlin.readValue
-import java.util.*
-
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -36,7 +32,7 @@ class SupplyChainFeatureTest(
     private val mockMvc: MockMvc,
     private val flyway: Flyway,
     private val objectMapper: ObjectMapper,
-    private val edgeRepository: EdgeRepository
+    private val edgeRepository: EdgeRepository,
 ) {
     @BeforeEach
     fun clearDatabase() {
@@ -123,15 +119,67 @@ class SupplyChainFeatureTest(
 
     @Nested
     inner class GetSupplyChainTree {
+        @BeforeEach
+        fun setUpTestData() {
+            edgeRepository.createEdge(source = "Node 1", target = "Node 2")
+            edgeRepository.createEdge(source = "Node 1", target = "Node 3")
+            edgeRepository.createEdge(source = "Node 2", target = "Node 4")
+            edgeRepository.createEdge(source = "Node 2", target = "Node 5")
+            edgeRepository.createEdge(source = "Node 3", target = "Node 6")
+            //another supply chain should not be connected to the other edges
+            edgeRepository.createEdge(source = "Node 7", target = "Node 8")
+            edgeRepository.createEdge(source = "Node 8", target = "Node 9")
+            edgeRepository.createEdge(source = "Node 8", target = "Node 10")
+        }
+
         @Test
         fun `should return supply chain tree from root node`() {
-            TODO("Not yet implemented")
+            val response = mockMvc.getSupplyChainTree(rootSourceId = "Node 1")
+                .andExpect { status { isOk() } }
+                .andReturn().response.contentAsString.let { objectMapper.readValue<SupplyChainResponse>(it) }
+
+            assertThat(response).isNotNull().all {
+                prop(SupplyChainResponse::sourceId).isEqualTo("Node 1")
+                prop(SupplyChainResponse::children).isNotNull().all {
+                    hasSize(2)
+                    index(0).all {
+                        prop(SupplyChainResponse::sourceId).isEqualTo("Node 2")
+                        prop(SupplyChainResponse::children).isNotNull().all {
+                            hasSize(2)
+                            index(0).all {
+                                prop(SupplyChainResponse::sourceId).isEqualTo("Node 4")
+                                prop(SupplyChainResponse::children).isNull()
+                            }
+                            index(1).all {
+                                prop(SupplyChainResponse::sourceId).isEqualTo("Node 5")
+                                prop(SupplyChainResponse::children).isNull()
+                            }
+                        }
+                    }
+                    index(1).all {
+                        prop(SupplyChainResponse::sourceId).isEqualTo("Node 3")
+                        prop(SupplyChainResponse::children).isNotNull().single().all {
+                            prop(SupplyChainResponse::sourceId).isEqualTo("Node 6")
+                            prop(SupplyChainResponse::children).isNull()
+                        }
+                    }
+                }
+            }
         }
 
         @Test
         fun `should return error when root node was not found to fetch supply chain tree`() {
-            TODO("Not yet implemented")
+            mockMvc.getSupplyChainTree(rootSourceId = "Unknown Node")
+                .andExpect {
+                    status { isNotFound() }
+                    content { contentType(MediaType.APPLICATION_PROBLEM_JSON) }
+                    jsonPath("$.title").value("Supply chain tree not found")
+                    jsonPath("$.detail").value("Supply chain tree for source Unknown Node not found")
+                }
         }
+
+        private fun MockMvc.getSupplyChainTree(rootSourceId: String) =
+            get("/supply-chain/$rootSourceId")
     }
 
     companion object {
