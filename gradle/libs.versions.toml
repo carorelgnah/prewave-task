@@ -13,6 +13,9 @@ postgresql = { module = "org.postgresql:postgresql" }
 springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version = "3.1.1" }
 jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin", version = "3.1.2" }
 
+spring-boot-flyway = { module = "org.springframework.boot:spring-boot-flyway" }
+flyway-database-postgres = { module = "org.flywaydb:flyway-database-postgresql" }
+
 spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
