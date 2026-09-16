@@ -32,7 +32,7 @@ class SupplyChainController(
         return SupplyChainResponse(id = id)
     }
 
-    data class EdgeCreateRequest(val source: UUID, val target: UUID)
+    data class EdgeCreateRequest(val source: String, val target: String)
     data class EdgeCreatedResponse(val id: UUID)
     data class SupplyChainResponse(val id: UUID, val children: List<SupplyChainResponse> = emptyList())
 }

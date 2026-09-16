@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.spring)
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
+    alias(libs.plugins.jooq.codegen.gradle)
 }
 
 group = "com.prewave"
@@ -30,6 +31,7 @@ dependencies {
     implementation(libs.flyway.database.postgres)
 
     runtimeOnly(libs.postgresql)
+    jooqCodegen(libs.jooq.meta.extensions)
 
     testImplementation(libs.spring.boot.starter.webmvc.test)
     testImplementation(libs.spring.boot.starter.test)
@@ -47,6 +49,36 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
     }
+}
+
+jooq {
+    configuration {
+        generator {
+            name = "org.jooq.codegen.KotlinGenerator"
+            database {
+                name = "org.jooq.meta.extensions.ddl.DDLDatabase"
+                properties {
+                    property { key = "scripts"; value = "src/main/resources/db/migration/*.sql" }
+                    property { key = "sort";    value = "flyway" }
+                    property { key = "defaultNameCase"; value = "lower" }
+                }
+            }
+
+            generate { isKotlinNotNullRecordAttributes = true }
+            target {
+                packageName = "com.prewave.prewavetask.jooq"
+                directory = layout.buildDirectory.dir("generated-src/jooq").get().asFile.path
+            }
+        }
+    }
+}
+
+tasks.named("jooqCodegen") {
+    inputs.files(fileTree("src/main/resources/db/migration"))
+}
+
+tasks.named("compileKotlin") {
+    dependsOn(tasks.named("jooqCodegen"))
 }
 
 tasks.withType<Test> {

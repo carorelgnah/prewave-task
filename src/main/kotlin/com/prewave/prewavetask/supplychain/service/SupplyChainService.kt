@@ -1,29 +1,28 @@
 package com.prewave.prewavetask.supplychain.service
 
+import com.prewave.prewavetask.jooq.tables.records.EdgeRecord
+import com.prewave.prewavetask.supplychain.repository.EdgeRepository
 import org.springframework.stereotype.Service
-import java.util.UUID
+import org.springframework.transaction.annotation.Transactional
+import java.util.*
 
 @Service
-class SupplyChainService {
+@Transactional
+class SupplyChainService(private val edgeRepository: EdgeRepository) {
 
-    fun createEdge(source: UUID, target: UUID): Edge {
-        /*
-        TODO: implement
-            - check source != target
-            - unique constratint on db on source,target
-            - avoid cycle??
-         */
-        return Edge(id = UUID.randomUUID(), source = source, target = target)
+    fun createEdge(source: String, target: String): EdgeRecord {
+        require(source != target) { "Source and target cannot be the same" }
+
+        return edgeRepository.createEdge(source, target)
+            ?: throw RuntimeException("Edge creation failed")
     }
 
     fun deleteEdge(id: UUID) {
         //TODO: implement
     }
 
+    @Transactional(readOnly = true)
     fun getSupplyChainTree(rootId: UUID) {
         //TODO: implement
     }
-
-    //TODO; move to its own file as entity
-    data class Edge(val id: UUID, val source: UUID, val target: UUID)
 }
