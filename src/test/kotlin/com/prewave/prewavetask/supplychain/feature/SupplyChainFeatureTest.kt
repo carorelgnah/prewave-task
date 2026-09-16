@@ -6,7 +6,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import com.prewave.prewavetask.jooq.tables.records.EdgeRecord
-import com.prewave.prewavetask.supplychain.api.SupplyChainController.EdgeCreateRequest
+import com.prewave.prewavetask.supplychain.api.SupplyChainController.EdgeRequest
 import com.prewave.prewavetask.supplychain.api.SupplyChainController.EdgeCreatedResponse
 import com.prewave.prewavetask.supplychain.repository.EdgeRepository
 import org.flywaydb.core.Flyway
@@ -19,12 +19,14 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.MediaType
 import org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.post
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.postgresql.PostgreSQLContainer
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.module.kotlin.readValue
+import java.util.*
 
 
 @SpringBootTest
@@ -47,7 +49,7 @@ class SupplyChainFeatureTest(
         @Test
         fun `should create new edge`() {
             val response: EdgeCreatedResponse =
-                mockMvc.createEdge(EdgeCreateRequest(source = SOURCE_ID, target = TARGET_ID))
+                mockMvc.createEdge(EdgeRequest(source = SOURCE_ID, target = TARGET_ID))
                     .andExpect { status { isCreated() } }
                     .andReturn().response.contentAsString.let { objectMapper.readValue<EdgeCreatedResponse>(it) }
 
@@ -64,7 +66,7 @@ class SupplyChainFeatureTest(
         fun `should respond with error if edge already exists`() {
             edgeRepository.createEdge(source = SOURCE_ID, target = TARGET_ID)
 
-            mockMvc.createEdge(EdgeCreateRequest(source = SOURCE_ID, target = TARGET_ID))
+            mockMvc.createEdge(EdgeRequest(source = SOURCE_ID, target = TARGET_ID))
                 .andExpect {
                     status { isConflict() }
                     content { contentType(MediaType.APPLICATION_PROBLEM_JSON) }
@@ -75,7 +77,7 @@ class SupplyChainFeatureTest(
 
         @Test
         fun `should respond with error if request is infalid`() {
-            mockMvc.createEdge(EdgeCreateRequest(source = SOURCE_ID, target = SOURCE_ID))
+            mockMvc.createEdge(EdgeRequest(source = SOURCE_ID, target = SOURCE_ID))
                 .andExpect {
                     status { isBadRequest() }
                     content { contentType(MediaType.APPLICATION_PROBLEM_JSON) }
@@ -84,10 +86,10 @@ class SupplyChainFeatureTest(
                 }
         }
 
-        private fun MockMvc.createEdge(createEdgeRequest: EdgeCreateRequest) =
+        private fun MockMvc.createEdge(edgeRequest: EdgeRequest) =
             post("/supply-chain/edge") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(createEdgeRequest)
+                content = objectMapper.writeValueAsString(edgeRequest)
             }
     }
 
@@ -95,13 +97,28 @@ class SupplyChainFeatureTest(
     inner class DeleteEdge {
         @Test
         fun `should delete existing edge`() {
-            TODO("Not yet implemented")
+            edgeRepository.createEdge(source = SOURCE_ID, target = TARGET_ID)
+
+            mockMvc.deleteEdge(EdgeRequest(source = SOURCE_ID, target = TARGET_ID))
+                .andExpect { status { isNoContent() } }
         }
 
         @Test
         fun `should respond with error if deleting non existent edge`() {
-            TODO("Not yet implemented")
+            mockMvc.deleteEdge(EdgeRequest(source = SOURCE_ID, target = TARGET_ID))
+                .andExpect {
+                    status { isConflict() }
+                    content { contentType(MediaType.APPLICATION_PROBLEM_JSON) }
+                    jsonPath("$.title").value("Edge does not exist")
+                    jsonPath("$.detail").value("Edge with $SOURCE_ID and $TARGET_ID not found and can't be deleted")
+                }
         }
+
+        private fun MockMvc.deleteEdge(edgeRequest: EdgeRequest) =
+            delete("/supply-chain/edge") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(edgeRequest)
+            }
     }
 
     @Nested

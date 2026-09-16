@@ -13,12 +13,15 @@ class SupplyChainService(private val edgeRepository: EdgeRepository) {
     fun createEdge(source: String, target: String): EdgeRecord {
         require(source != target) { "Source and target cannot be the same" }
 
-        return edgeRepository.createEdge(source, target)
+        return edgeRepository.createEdge(source = source, target = target)
             ?: throw RuntimeException("Edge creation failed")
     }
 
-    fun deleteEdge(id: UUID) {
-        //TODO: implement
+    fun deleteEdge(source: String, target: String) {
+        edgeRepository.getEdge(source = source, target = target)
+            ?: throw NoSuchElementException("Edge with $source and $target not found and can't be deleted")
+
+        edgeRepository.deleteEdge(source = source, target = target)
     }
 
     @Transactional(readOnly = true)

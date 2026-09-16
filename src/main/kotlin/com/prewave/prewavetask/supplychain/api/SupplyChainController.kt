@@ -15,11 +15,11 @@ class SupplyChainController(
 
     @PostMapping("/edge")
     @ResponseStatus(HttpStatus.CREATED)
-    fun createEdge(@RequestBody edgeCreateRequest: EdgeCreateRequest): EdgeCreatedResponse =
+    fun createEdge(@RequestBody edgeRequest: EdgeRequest): EdgeCreatedResponse =
         runCatching {
             val createEdge = supplyChainService.createEdge(
-                source = edgeCreateRequest.source,
-                target = edgeCreateRequest.target
+                source = edgeRequest.source,
+                target = edgeRequest.target
             )
             return EdgeCreatedResponse(id = createEdge.id)
         }.getOrElse { exception ->
@@ -34,7 +34,7 @@ class SupplyChainController(
                 is DuplicateKeyException -> throw ProblemDetailException(
                     status = HttpStatus.CONFLICT,
                     title = "Edge already exists",
-                    detail = "Edge with source ${edgeCreateRequest.source} and target ${edgeCreateRequest.target} already exists",
+                    detail = "Edge with source ${edgeRequest.source} and target ${edgeRequest.target} already exists",
                     cause = exception
                 )
 
@@ -47,10 +47,28 @@ class SupplyChainController(
             }
         }
 
-    @DeleteMapping("/edge/{id}")
+    @DeleteMapping("/edge")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun delete(@PathVariable id: UUID) =
-        supplyChainService.deleteEdge(id = id)
+    fun delete(@RequestBody edgeRequest: EdgeRequest) = runCatching {
+        supplyChainService.deleteEdge(source = edgeRequest.source, target = edgeRequest.target)
+    }.getOrElse { exception ->
+        when (exception) {
+            is NoSuchElementException -> throw ProblemDetailException(
+                status = HttpStatus.CONFLICT,
+                title = "Edge does not exist",
+                detail = "Edge with ${edgeRequest.source} and ${edgeRequest.target} not found and can't be deleted",
+                cause = exception
+            )
+
+            else -> throw ProblemDetailException(
+                status = HttpStatus.INTERNAL_SERVER_ERROR,
+                title = "Unknown error",
+                detail = "Edge deletion failed",
+                cause = exception
+            )
+        }
+    }
+
 
     @GetMapping("/{id}")
     fun getSupplyChainTree(@PathVariable id: UUID): SupplyChainResponse {
@@ -58,7 +76,7 @@ class SupplyChainController(
         return SupplyChainResponse(id = id)
     }
 
-    data class EdgeCreateRequest(val source: String, val target: String)
+    data class EdgeRequest(val source: String, val target: String)
     data class EdgeCreatedResponse(val id: UUID)
     data class SupplyChainResponse(val id: UUID, val children: List<SupplyChainResponse> = emptyList())
 

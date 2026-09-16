@@ -20,4 +20,14 @@ class EdgeRepository(private val dsl: DSLContext) {
         .where(EDGE.ID.eq(id))
         .fetchOne()
 
+    fun getEdge(source: String, target: String): EdgeRecord? = dsl
+        .selectFrom(EDGE)
+        .where(EDGE.SOURCE_ID.eq(source).and(EDGE.TARGET_ID.eq(target)))
+        .fetchOne()
+
+    fun deleteEdge(source: String, target: String) = dsl
+        .deleteFrom(EDGE)
+        .where(EDGE.SOURCE_ID.eq(source).and(EDGE.TARGET_ID.eq(target)))
+        .execute()
+
 }
