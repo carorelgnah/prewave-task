@@ -84,6 +84,7 @@ class SupplyChainController(
     @GetMapping("/{sourceId}")
     fun getSupplyChainTree(@PathVariable sourceId: String): SupplyChainResponse =
         runCatching {
+            //TODO: fix: return single node without children
             supplyChainService.getSupplyChainTree(rootSourceId = sourceId)
                 .toResponse()
         }.getOrElse { exception ->
