@@ -1,7 +1,11 @@
 package com.prewave.prewavetask.supplychain.api
 
 import com.prewave.prewavetask.core.exception.ProblemDetailException
+import com.prewave.prewavetask.supplychain.dto.EdgeCreatedResponse
+import com.prewave.prewavetask.supplychain.dto.EdgeRequest
+import com.prewave.prewavetask.supplychain.dto.SupplyChainResponse
 import com.prewave.prewavetask.supplychain.service.SupplyChainService
+import jakarta.validation.Valid
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
@@ -15,7 +19,11 @@ class SupplyChainController(
 
     @PostMapping("/edge")
     @ResponseStatus(HttpStatus.CREATED)
-    fun createEdge(@RequestBody edgeRequest: EdgeRequest): EdgeCreatedResponse =
+    fun createEdge(
+        @RequestBody
+        @Valid
+        edgeRequest: EdgeRequest
+    ): EdgeCreatedResponse =
         runCatching {
             val createEdge = supplyChainService.createEdge(
                 source = edgeRequest.source,
@@ -49,7 +57,11 @@ class SupplyChainController(
 
     @DeleteMapping("/edge")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun delete(@RequestBody edgeRequest: EdgeRequest) = runCatching {
+    fun delete(
+        @RequestBody
+        @Valid
+        edgeRequest: EdgeRequest
+    ) = runCatching {
         supplyChainService.deleteEdge(source = edgeRequest.source, target = edgeRequest.target)
     }.getOrElse { exception ->
         when (exception) {
@@ -105,9 +117,7 @@ class SupplyChainController(
         keys.firstOrNull { key -> !this.values.flatten().contains(key) }
             ?: throw IllegalStateException("Supply chain tree is not valid")
 
-    data class EdgeRequest(val source: String, val target: String)
-    data class EdgeCreatedResponse(val id: UUID)
-    data class SupplyChainResponse(val sourceId: String?, val children: List<SupplyChainResponse>?)
+
 
 
 }
